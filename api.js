@@ -1,9 +1,10 @@
 const axios = require('axios').default; // may hang occasionally
 const FormData = require('form-data');
+require('dotenv').config();
 
 const getAIMLApiResponse = async (imageUrl) => {
-    const AIML_API_URL = "https://api.aimlapi.com/v1/chat/completions"; // API Endpoint
-    const AIML_API_KEY = "ff12007fd3824e188670dc0fdbf8e692"; // API Key
+    const AIML_API_URL = process.env.AIML_API_URL;
+    const AIML_API_KEY = process.env.AIML_API_KEY;
     try {
         const response = await axios.post(
             AIML_API_URL,
@@ -71,91 +72,7 @@ const getAIMLApiResponse = async (imageUrl) => {
     }
 };
 
-const testCallPoeApi = async(companyName, website, title) => {
-    const ACCESS_TOKEN = "617ba408824b9f2c2e9e1b61e2c04761";
-    const BOT_API_URL = "https://ab-chatgpt-api.fdmt.hk/classify-pss";
-    // const prompt =
-    // `Given a person's title, company/ organization name and company/ organization website, propose a suitable profession, segment, and sector according to the following rules.
-    // The profession must ONLY be one of those in the data source "fdmt-professions-chunk-X" (consider all chunks),
-    // the segment must ONLY be one of those in the data source "fdmt-segments-chunk-X" (consider all chunks),
-    // the sector must ONLY be one of those in the data source "fdmt-sectors-chunk-X" (consider all chunks). Also return the corresponding id according to the source file.
-    // You must assign one and only one profession, segment and a sector according to the given information.
-    // The proposed profession, segment and sector may not neccessarily perfectly match the given information, as long as it reasonably concluded the nature of the company/ organization.
-    // The proposed profession, segment and sector should only be chosen from the mentioned data source, you should not make up any profession, segment or sector.
-
-    // Company/ Organization name: ${companyName}
-    // Website: ${website}
-    // Title: ${title}
-
-    // Example response (Only rpely in this format):
-    // Profession: IT Consultant,
-    // Profession id: 1,
-    // Segment: Software,
-    // Segment id: 34,
-    // Sector: ICT,
-    // Sector id: 3`;
-    
-    // const prompt = `
-    // Task:
-    // A person work in ${companyName} (website: ${website}), with a title of ${title}. Classify the person to a suitable profession, segment, and a sector.
-
-    // Rules:
-    // The profession must ONLY be one of those in the data source "fdmt-professions-chunk-X" (consider all chunks).
-    // The segment must ONLY be one of those in the data source "fdmt-segments-chunk-X" (consider all chunks).
-    // The sector must ONLY be one of those in the data source "fdmt-sectors-chunk-X" (consider all chunks).
-    // Only choose one and only one profession, segment, and sector from the mentioned data source.
-    // The chosen profession, segment and sector may not neccessarily perfectly match the given information, it is fine as long as it reasonably concluded the nature of the company/ organization.
-    // Do not make up any information, only choose within the data source.
-
-    // Example output:
-    // Profession: IT Consultant,
-    // Profession id: 1,
-    // Segment: Software,
-    // Segment id: 34,
-    // Sector: ICT,
-    // Sector id: 3
-    // `;
-
-    const prompt = `What is the id for profession "IT Consultant"`;
-    try {
-      const response = await axios.post(BOT_API_URL, {
-        "version": "1.0",
-        "type": "query",
-        "query": [{
-          "role": "user",
-          "content": prompt,
-          "timestamp": new Date().valueOf()
-        }],
-        "user_id": "u-1234abcd5678efgh",
-        "conversation_id": "",
-        "message_id": "",
-      }, {
-        headers: {
-          "Authorization": `Bearer ${ACCESS_TOKEN}`,
-          "Content-Type": "application/json"
-        }
-      });
-  
-    //   console.log(response.data);
-  
-      let resultJSONStr = "";
-      for (const message of response.data.split("\n")) {
-        try {
-          const jsonStr = message.split("data: ").pop();
-          const parsed = JSON.parse((jsonStr || "").trim());
-          if (parsed.text) resultJSONStr += parsed.text;
-        } catch (e) {
-          continue;
-        }
-      }
-  
-      console.log(resultJSONStr);
-    } catch (error) {
-      console.error(error);
-    }
-};
-
-async function callAppSheetApi(appId, accessKey, tableName, action, selector, rows) {
+const callAppSheetApi = async (appId, accessKey, tableName, action, selector, rows) => {
     var tryCount = 0, maxTries = 5;
     while (true) {
         try {
@@ -168,16 +85,16 @@ async function callAppSheetApi(appId, accessKey, tableName, action, selector, ro
         } catch (error) {
             console.error(error);
             if (++tryCount > maxTries) return [];
-            await sleep(randInt(60, 90));
+            await sleep(60);
         }
     }
 };
 
 const insertToContactTable = async (name, salutation, email, source_link, whatsapp_number, org, relation) => {
-    const APP_ID = "868f2e9d-f8fb-45c8-8be2-a743225f73f9"; // function callAppSheetApi and insertToContactTable
-    const ACCESS_KEY = "V2-WYmEJ-keP3W-lpdFk-y5n55-KMnHK-G0B8d-qAjvb-KhyMs"; // function callAppSheetApi and insertToContactTable
-    const STATUS_ID = "s3831c9ce"; // function insertToContactTable: 01 PSS to be define
-    const TEMP_ENTITY_ID = "252"; // function insertToContactTable: Segment "-", under Miscellaneous sector, for temporary storing the practitioner
+    const APP_ID = process.env.APP_ID;
+    const ACCESS_KEY = process.env.ACCESS_KEY;
+    const STATUS_ID = process.env.STATUS_ID;
+    const TEMP_ENTITY_ID = process.env.TEMP_ENTITY_ID;
     try {
         const contactRow = await callAppSheetApi(APP_ID, ACCESS_KEY, "contact", "Add", null, [{
             status_id: STATUS_ID,
@@ -206,22 +123,22 @@ const insertToContactTable = async (name, salutation, email, source_link, whatsa
     }
 };
 
-const fetchCFImageUploadBatchToken = async () => {
-    const API_KEY = "QH8Fw-7PYzGAbUHft2RmEVLNKYqnHO-PR4ldhjhv";
-    const ACCOUNT_ID = "24af04381f468a29f6134fccdf151bd9";
+const fetchCFImageUploadBatchToken = async (CF_API_KEY, ACCOUNT_ID) => {
     const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/images/v1/batch_token`
-    const res = await axios.get(url, { headers: { "Authorization": `Bearer ${API_KEY}` } });
+    const res = await axios.get(url, { headers: { "Authorization": `Bearer ${CF_API_KEY}` } });
     return res.data.result.token;
 }
 
-
 const uploadImageToCF = async (base64Data, fileName = "") => {
+    const CF_API_KEY = process.env.CF_API_KEY;
+    const ACCOUNT_ID = process.env.ACCOUNT_ID;
+    
     const binaryData = Buffer.from(base64Data, 'base64');
     const formData = new FormData();
     formData.append('file', binaryData, fileName);
     const response = await axios.post('https://batch.imagedelivery.net/images/v1', formData, {
         headers: {
-            'Authorization': `Bearer ${await fetchCFImageUploadBatchToken()}`,
+            'Authorization': `Bearer ${await fetchCFImageUploadBatchToken(CF_API_KEY, ACCOUNT_ID)}`,
             'Content-Type': `multipart/form-data; boundary=${formData._boundary}`,
         },
     });
@@ -231,7 +148,6 @@ const uploadImageToCF = async (base64Data, fileName = "") => {
 }
 
 module.exports = {
-    // Name card bot
     getAIMLApiResponse,
     insertToContactTable,
     uploadImageToCF,
