@@ -1,4 +1,4 @@
-const axios = require('axios').default; // may hang occasionally
+const axios = require('axios').default;
 const FormData = require('form-data');
 require('dotenv').config();
 
